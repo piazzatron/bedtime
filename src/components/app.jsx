@@ -75,6 +75,18 @@ class Twitch {
     this.twitch.onAuthorized(callback)
   }
 
+
+  onBroadcast(broadcastCallback) {
+    if (!this.twitch) return
+    console.log("registering for broadcast")
+    this.twitch.listen('broadcast', (target, contentType, data) => {
+      const parsed = JSON.parse(data)
+      console.log({parsed})
+      broadcastCallback(parsed)
+    })
+    console.log("done registering for broadcast")
+  }
+
   async getInitialTrack() {
     if (!(this.twitch && this.channelId && this.token)) return
     const endpoint = `${EBS_ENDPOINT}/channels/${this.channelId}/current_track`
@@ -137,8 +149,19 @@ const TwitchContainer = () => {
       const token = twitch.token
       if (!token) return
 
+      // Setup broadcast handler
+      twitch.onBroadcast((data) => {
+        console.log("GOT BROADCAST")
+        if (data.type === "CURRENT_TRACK") {
+          const {trackId, ownerId} = data.data
+          console.log("pubsub: Setting new track")
+          setInitialTrack({trackId, ownerId})
+        }
+      })
+
       // returns {trackId, ownerId}
       const initialTrack = await twitch.getInitialTrack()
+      console.log("Got initial track")
       setInitialTrack(initialTrack)
       console.log({initialTrack})
     }
@@ -157,6 +180,7 @@ const TwitchContainer = () => {
       isTwitter: false,
     }
 
+    console.log({request})
     return request
   }, [initialTrack])
 
@@ -169,7 +193,7 @@ const TwitchContainer = () => {
 
       a()
     }, 5000)
-  })
+  }, [])
   return <App request={request}/>
 }
 
@@ -215,15 +239,6 @@ const getRequestDataFromURL = () => {
   }
 }
 
-// type AppProps = {
-//   request: {
-//     requestType: RequestType,
-//     id: number
-//     ownerId: number
-//     isTwitter: boolean
-//   }
-// }
-
 const App = ({ request }) => {
   const [didError, setDidError] = useState(false) // General errors
   const [did404, setDid404] = useState(false) // 404s indicate content was deleted
@@ -264,7 +279,6 @@ const App = ({ request }) => {
           setDid404(false)
           setTracksResponse(track)
           recordOpen(track.id, track.title, track.handle, track.urlPath)
-
           // set average color
           const color = await getDominantColor(track.coverArt)
           setDominantColor({ primary: color })
@@ -301,6 +315,7 @@ const App = ({ request }) => {
 
   // Perform initial request
   useEffect(() => {
+    console.log("Performing initial request")
     if (request) {
       requestMetadata(request)
     }

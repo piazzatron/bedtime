@@ -16,8 +16,8 @@ export default () => {
 
   const clampedRGBColor = (rgbString /* string of 'r,g,b' */) => {
     const [r, g, b] = rgbString.split(',').map(x => parseInt(x))
-  // Luminance in [0, 255]
-  // https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
+    // Luminance in [0, 255]
+    // https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
     const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b)
 
     if (luminance < LUMINANCE_THRESHOLD) {
@@ -108,6 +108,7 @@ export default () => {
   // eslint-disable-next-line
   self.addEventListener('message', e => {
     if (!e) return
+    didFulfill = false
     dominantRgb(JSON.parse(e.data))
   })
 }
