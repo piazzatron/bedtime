@@ -23,7 +23,10 @@ const envHostnameMap = {
 const getEnv = () => {
   // Determine what env we are in at runtime by checking window.location
   const hostname = window.location.hostname
-  return envHostnameMap[hostname]
+  // TODO: undo dis
+  // hardcode prod env
+  return Environment.PRODUCTION
+  // return envHostnameMap[hostname]
 }
 
 export const getIdentityEndpoint = () => {

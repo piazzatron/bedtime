@@ -1,5 +1,5 @@
 import { h } from 'preact'
-import { useCallback, useEffect, useState, useRef } from 'preact/hooks'
+import { useCallback, useEffect, useState, useRef, useMemo } from 'preact/hooks'
 import { getCollection, GetCollectionsResponse, getTrack, GetTracksResponse } from '../util/BedtimeClient'
 import CollectionPlayerContainer from './collection/CollectionPlayerContainer'
 import TrackPlayerContainer from './track/TrackPlayerContainer'
@@ -45,6 +45,134 @@ export const PlayerFlavor = Object.seal({
   COMPACT: 'compact'
 })
 
+// TWITCH CONSTANTS
+const EBS_ENDPOINT = 'http://localhost:3000'
+
+class Twitch {
+  constructor() {
+    this.token = null
+    this.channelId = null
+    this.clientId = null
+    this.userId = null
+
+    if (window.Twitch.ext) {
+      this.twitch = window.Twitch.ext
+    }
+  }
+
+  onAuthorized(authCallback) {
+    if (!this.twitch) return
+
+    const callback = (args) => {
+      this.token = args.token
+      this.channelId = args.channelId
+      this.clientId = args.clientId
+      this.userId = args.userId
+      // wrap it
+      authCallback(args)
+    }
+
+    this.twitch.onAuthorized(callback)
+  }
+
+  async getInitialTrack() {
+    if (!(this.twitch && this.channelId && this.token)) return
+    const endpoint = `${EBS_ENDPOINT}/channels/${this.channelId}/current_track`
+    console.log(`Calling: ${endpoint}`)
+    try {
+      const res = await fetch(endpoint, {
+        headers: this._getAuthHeader()
+      })
+      if (!res.ok) {
+        throw new Error(res.statusText)
+      }
+      const json = await res.json()
+      return json
+    } catch (e) {
+      console.error(e.message)
+    }
+  }
+
+  async setTrack(trackId, ownerId) {
+    console.log("Setting track!")
+    if (!(this.twitch && this.channelId && this.token)) return
+    const endpoint = `${EBS_ENDPOINT}/channels/${this.channelId}/current_track`
+    const body = { trackId, ownerId }
+    await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        ...this._getAuthHeader(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+  }
+
+  _getAuthHeader() {
+    if (!this.token) return {}
+    return {
+      Authorization: `Bearer ${this.token}`
+    }
+  }
+}
+
+const TwitchContainer = () => {
+
+  const twitch = useRef(new Twitch()).current
+
+  const [isAuthed, setIsAuthed] = useState(false)
+  useEffect(() => {
+    console.log("Doing twitch stuff")
+    twitch.onAuthorized((args) => {
+      console.log("GOT AUTH")
+      setIsAuthed(true)
+    })
+  }, [])
+
+  const [initialTrack, setInitialTrack] = useState(null)
+  useEffect(() => {
+    const a = async () => {
+      console.log("calling to get token")
+      if (!isAuthed) return
+      const token = twitch.token
+      if (!token) return
+
+      // returns {trackId, ownerId}
+      const initialTrack = await twitch.getInitialTrack()
+      setInitialTrack(initialTrack)
+      console.log({initialTrack})
+    }
+
+    a()
+  }, [isAuthed])
+
+  const request = useMemo(() => {
+    if (!initialTrack) return null
+
+    const request = {
+      requestType: RequestType.TRACK,
+      playerFlavor: PlayerFlavor.COMPACT,
+      id: initialTrack.trackId,
+      ownerId: initialTrack.ownerId,
+      isTwitter: false,
+    }
+
+    return request
+  }, [initialTrack])
+
+
+  useEffect(() => {
+    setTimeout(() => {
+      const a = async () => {
+        await twitch.setTrack(74003, 201)
+      }
+
+      a()
+    }, 5000)
+  })
+  return <App request={request}/>
+}
+
 // Attemps to parse a the window's url.
 // Returns null if the URL scheme is invalid.
 const getRequestDataFromURL = () => {
@@ -87,15 +215,23 @@ const getRequestDataFromURL = () => {
   }
 }
 
-const App = () => {
+// type AppProps = {
+//   request: {
+//     requestType: RequestType,
+//     id: number
+//     ownerId: number
+//     isTwitter: boolean
+//   }
+// }
+
+const App = ({ request }) => {
   const [didError, setDidError] = useState(false) // General errors
   const [did404, setDid404] = useState(false) // 404s indicate content was deleted
-  const [requestState, setRequestState] = useState(null) // Parsed request state
   const [isRetrying, setIsRetrying] = useState(false) // Currently retrying?
 
   const [tracksResponse, setTracksResponse] = useState(null)
   const [collectionsResponse, setCollectionsResponse] = useState(null)
-  const [showLoadingAnimation, setShowLoadingAnimation] = useState(false)
+  const [showLoadingAnimation, setShowLoadingAnimation] = useState(true)
   const onGoingRequest = useRef(false)
   const [dominantColor, setDominantColor] = useState(null)
 
@@ -165,14 +301,10 @@ const App = () => {
 
   // Perform initial request
   useEffect(() => {
-    const request = getRequestDataFromURL()
-    if (!request) {
-      setDidError(true)
-      return
+    if (request) {
+      requestMetadata(request)
     }
-    setRequestState(request)
-    requestMetadata(request)
-  }, [])
+  }, [request])
 
   // Retries
   const retryRequestMetadata = async () => {
@@ -180,19 +312,21 @@ const App = () => {
     setIsRetrying(true)
     // If we don't have a valid request state
     // (e.g. URL params are invalid, just wait and then set it to retry failed)
-    if (!requestState) {
-      setTimeout(() => {
-        setIsRetrying(false)
-      }, 1500)
-      return
-    }
 
-    await requestMetadata(requestState)
+    // TODO: need to pass in a loading state or something
+    // if (!requestState) {
+    //   setTimeout(() => {
+    //     setIsRetrying(false)
+    //   }, 1500)
+    //   return
+    // }
+
+    await requestMetadata(request)
     setIsRetrying(false)
   }
 
-  const isCompact = requestState && requestState.playerFlavor && requestState.playerFlavor === PlayerFlavor.COMPACT
-  const mobileWebTwitter = isMobileWebTwitter(requestState?.isTwitter)
+  const isCompact = request && request.playerFlavor && request.playerFlavor === PlayerFlavor.COMPACT
+  const mobileWebTwitter = isMobileWebTwitter(request?.isTwitter)
 
   // The idea is to show nothing (null) until either we
   // get metadata back from GA, or we pass the loading threshold
@@ -219,9 +353,9 @@ const App = () => {
       return <Loading />
     }
 
-    const mobileWebTwitter = isMobileWebTwitter(requestState?.isTwitter)
+    const mobileWebTwitter = isMobileWebTwitter(request?.isTwitter)
 
-    if (requestState && dominantColor) {
+    if (request && dominantColor) {
       return (
         <CSSTransition
           classNames={{
@@ -235,14 +369,14 @@ const App = () => {
         { tracksResponse
           ? <TrackPlayerContainer
               track={tracksResponse}
-              flavor={requestState.playerFlavor}
-              isTwitter={requestState.isTwitter}
+              flavor={request.playerFlavor}
+              isTwitter={request.isTwitter}
               backgroundColor={dominantColor.primary}
             />
           : <CollectionPlayerContainer
               collection={collectionsResponse}
-              flavor={requestState.playerFlavor}
-              isTwitter={requestState.isTwitter}
+              flavor={request.playerFlavor}
+              isTwitter={request.isTwitter}
               backgroundColor={dominantColor.primary}
               rowBackgroundColor={dominantColor.secondary}
             />
@@ -255,14 +389,14 @@ const App = () => {
   }
 
   const renderPausePopover = () => {
-    if (!requestState || (!tracksResponse && !collectionsResponse)) {
+    if (!request || (!tracksResponse && !collectionsResponse)) {
       return null
     }
 
     let artworkURL = tracksResponse?.coverArt || collectionsResponse?.coverArt
     let artworkClickURL = tracksResponse?.urlPath || collectionsResponse?.collectionURLPath
     let listenOnAudiusURL = tracksResponse?.urlPath || collectionsResponse?.collectionURLPath
-    let flavor = requestState.playerFlavor
+    let flavor = request.playerFlavor
     return (<PausePopover
              artworkURL={artworkURL}
              artworkClickURL={artworkClickURL}
@@ -273,10 +407,10 @@ const App = () => {
   }
 
   useEffect(() => {
-    if (requestState?.isTwitter) {
+    if (request?.isTwitter) {
       document.body.style.backgroundColor = '#ffffff'
     }
-  }, [requestState])
+  }, [request])
 
   return (
     <div
@@ -284,7 +418,7 @@ const App = () => {
       className={
         cn(styles.app,
            { [styles.compactApp]: isCompact },
-           { [styles.twitter]: requestState && requestState.isTwitter && !mobileWebTwitter}
+           { [styles.twitter]: request && request.isTwitter && !mobileWebTwitter}
           )}>
       <ToastContextProvider>
         <PauseContextProvider>
@@ -298,4 +432,4 @@ const App = () => {
   )
 }
 
-export default App
+export default TwitchContainer
