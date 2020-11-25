@@ -30,13 +30,35 @@
         "width": 1280,
         "height": 720
       },
-      "id": "2",
+      "id": "3",
       "isPopout": false,
-      "label": "set track",
+      "label": "",
+      "linked": false,
+      "linkedUserId": "",
+      "orientation": "Portrait",
+      "type": "video_overlay",
+      "viewerType": "Broadcaster"
+    },
+    {
+      "channelId": "64234262",
+      "configurationAnchor": "component",
+      "displayChannelName": "piazzatron",
+      "features": {
+        "isBitsEnabled": false,
+        "isChatEnabled": false,
+        "isSubscriptionStatusAvailable": false
+      },
+      "frameSize": {
+        "width": 1280,
+        "height": 720
+      },
+      "id": "4",
+      "isPopout": false,
+      "label": "",
       "linked": true,
       "linkedUserId": "265737932",
       "orientation": "Portrait",
-      "type": "config",
+      "type": "dashboard",
       "viewerType": "Broadcaster"
     },
     {
@@ -52,14 +74,14 @@
         "width": 1280,
         "height": 720
       },
-      "id": "3",
+      "id": "5",
       "isPopout": false,
       "label": "",
       "linked": false,
       "linkedUserId": "",
       "orientation": "Portrait",
       "type": "video_overlay",
-      "viewerType": "Broadcaster"
+      "viewerType": "Logged-Out Viewer"
     }
   ],
   "manifest": {
@@ -68,7 +90,7 @@
     "authorName": "piazzatron",
     "bitsEnabled": false,
     "canInstall": true,
-    "configUrl": "http://localhost:8080/config.html",
+    "configUrl": "http://localhost:8080/config",
     "configurationLocation": "none",
     "description": "",
     "eulaTosUrl": "",
@@ -77,7 +99,7 @@
     "iconUrls": {},
     "id": "bo9vxou8ftz6e21eby3n2wwnyrkvd6",
     "installationCount": -42,
-    "liveConfigUrl": "",
+    "liveConfigUrl": "http://localhost:8080/config",
     "name": "audius-test-2",
     "panelHeight": 0,
     "privacyPolicyUrl": "",
@@ -117,7 +139,11 @@
         "autoScale": true
       },
       "config": {
-        "viewerUrl": "http://localhost:8080/config.html",
+        "viewerUrl": "http://localhost:8080/config",
+        "canLinkExternalContent": false
+      },
+      "liveConfig": {
+        "viewerUrl": "http://localhost:8080/config",
         "canLinkExternalContent": false
       }
     },

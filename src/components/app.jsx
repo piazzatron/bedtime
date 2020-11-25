@@ -20,6 +20,11 @@ import { getDominantColor } from '../util/image/dominantColor'
 import { shadeColor } from '../util/shadeColor'
 import { isMobileWebTwitter } from '../util/isMobileWebTwitter'
 import { CardContextProvider } from './card/Card'
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+} from "react-router-dom";
 
 if ((module).hot) {
     // tslint:disable-next-line:no-var-requires
@@ -47,6 +52,80 @@ export const PlayerFlavor = Object.seal({
 
 // TWITCH CONSTANTS
 const EBS_ENDPOINT = 'http://localhost:3000'
+
+const Pages = () => {
+  return (
+    <Router>
+      <Switch>
+        <Route path='/config'>
+          <ConfigPage />
+        </Route>
+        <Route path='/'>
+          <TwitchContainer />
+        </Route>
+      </Switch>
+    </Router>
+  )
+}
+
+const parseTrackUrl = (url) => {
+  // example: https://audius.co/michael/friday-night-jamz-74003
+  const regex = /^(https:)?\/\/audius.co\/.+\/.+-\d+$/
+  url = url.trim()
+  const matches = regex.test(url)
+  if (!matches) return null
+  const split = url.split('-')
+  const last = split[split.length - 1]
+  return parseInt(last, 10)
+}
+
+const ConfigPage = () => {
+  const twitch = useRef(new Twitch()).current
+  const isAuthed = useIsAuthed(twitch)
+
+  const [invalidURL, setInvalidURL] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [trackUrl, setTrackUrl] = useState("")
+
+  const onClickSetTrack = useCallback(async () => {
+    setInvalidURL(false)
+    console.log({isAuthed, trackUrl})
+    if (!isAuthed || !trackUrl) return
+    const trackId = parseTrackUrl(trackUrl)
+    if (!trackId) {
+      console.log("bad url!")
+      setInvalidURL(true)
+      return
+    }
+
+    setIsLoading(true)
+    let resp = null
+    try {
+      console.log("hitting endpoint!")
+      const endpoint = `https://discoveryprovider.audius.co/tracks?id=${trackId}`
+      resp = await fetch(endpoint)
+      const tracks =  await resp.json()
+      const {owner_id: ownerId} = tracks.data[0]
+      await twitch.setTrack(trackId, ownerId)
+    } catch(e) {
+      console.log("ERRRRRR")
+      console.error(e.message)
+    } finally {
+      setIsLoading(false)
+    }
+
+    console.log({trackData})
+
+  }, [isAuthed, trackUrl])
+
+  return <div>
+    <label>
+      Current Track:
+      <input type="text" val={trackUrl} onChange={e => setTrackUrl(e.target.value)}/>
+      <button onClick={onClickSetTrack}>Set</button>
+    </label>
+  </div>
+}
 
 class Twitch {
   constructor() {
@@ -128,10 +207,7 @@ class Twitch {
   }
 }
 
-const TwitchContainer = () => {
-
-  const twitch = useRef(new Twitch()).current
-
+const useIsAuthed = (twitch) => {
   const [isAuthed, setIsAuthed] = useState(false)
   useEffect(() => {
     console.log("Doing twitch stuff")
@@ -139,7 +215,15 @@ const TwitchContainer = () => {
       console.log("GOT AUTH")
       setIsAuthed(true)
     })
-  }, [])
+  }, [twitch])
+
+  return isAuthed
+}
+
+const TwitchContainer = () => {
+
+  const twitch = useRef(new Twitch()).current
+  const isAuthed = useIsAuthed(twitch)
 
   const [initialTrack, setInitialTrack] = useState(null)
   useEffect(() => {
@@ -184,16 +268,6 @@ const TwitchContainer = () => {
     return request
   }, [initialTrack])
 
-
-  useEffect(() => {
-    setTimeout(() => {
-      const a = async () => {
-        await twitch.setTrack(74003, 201)
-      }
-
-      a()
-    }, 5000)
-  }, [])
   return <App request={request}/>
 }
 
@@ -447,4 +521,4 @@ const App = ({ request }) => {
   )
 }
 
-export default TwitchContainer
+export default Pages
