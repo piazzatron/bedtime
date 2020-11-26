@@ -38,6 +38,7 @@
     "preact": "^10.0.1",
     "preact-render-to-string": "^5.1.0",
     "preact-router": "^3.0.0",
+    "react-draggable": "^4.4.3",
     "react-router-dom": "^5.2.0",
     "react-transition-group": "^4.3.0",
     "simplebar-react": "^2.1.0"

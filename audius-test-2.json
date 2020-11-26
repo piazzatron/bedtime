@@ -30,35 +30,13 @@
         "width": 1280,
         "height": 720
       },
-      "id": "3",
+      "id": "2",
       "isPopout": false,
-      "label": "",
-      "linked": false,
-      "linkedUserId": "",
-      "orientation": "Portrait",
-      "type": "video_overlay",
-      "viewerType": "Broadcaster"
-    },
-    {
-      "channelId": "64234262",
-      "configurationAnchor": "component",
-      "displayChannelName": "piazzatron",
-      "features": {
-        "isBitsEnabled": false,
-        "isChatEnabled": false,
-        "isSubscriptionStatusAvailable": false
-      },
-      "frameSize": {
-        "width": 1280,
-        "height": 720
-      },
-      "id": "4",
-      "isPopout": false,
-      "label": "",
+      "label": "set track",
       "linked": true,
       "linkedUserId": "265737932",
       "orientation": "Portrait",
-      "type": "dashboard",
+      "type": "config",
       "viewerType": "Broadcaster"
     },
     {
@@ -74,14 +52,36 @@
         "width": 1280,
         "height": 720
       },
-      "id": "5",
+      "id": "3",
       "isPopout": false,
       "label": "",
       "linked": false,
       "linkedUserId": "",
       "orientation": "Portrait",
       "type": "video_overlay",
-      "viewerType": "Logged-Out Viewer"
+      "viewerType": "Broadcaster"
+    },
+    {
+      "channelId": "64234262",
+      "configurationAnchor": "video_overlay",
+      "displayChannelName": "piazzatron",
+      "features": {
+        "isBitsEnabled": false,
+        "isChatEnabled": false,
+        "isSubscriptionStatusAvailable": false
+      },
+      "frameSize": {
+        "width": 1280,
+        "height": 720
+      },
+      "id": "4",
+      "isPopout": false,
+      "label": "",
+      "linked": false,
+      "linkedUserId": "",
+      "orientation": "Portrait",
+      "type": "video_overlay",
+      "viewerType": "Broadcaster"
     }
   ],
   "manifest": {

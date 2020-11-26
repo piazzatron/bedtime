@@ -25,6 +25,7 @@ import {
   Switch,
   Route,
 } from "react-router-dom";
+import Draggable from 'react-draggable'
 
 if ((module).hot) {
     // tslint:disable-next-line:no-var-requires
@@ -118,10 +119,10 @@ const ConfigPage = () => {
 
   }, [isAuthed, trackUrl])
 
-  return <div>
+  return <div style={{backgroundColor: "white", height: "100vh", padding: "24px"}}>
     <label>
       Current Track:
-      <input type="text" val={trackUrl} onChange={e => setTrackUrl(e.target.value)}/>
+      <input type="text" val={trackUrl} onChange={e => setTrackUrl(e.target.value)} style={{ width: "350px"}}/>
       <button onClick={onClickSetTrack}>Set</button>
     </label>
   </div>
@@ -268,7 +269,12 @@ const TwitchContainer = () => {
     return request
   }, [initialTrack])
 
-  return <App request={request}/>
+  return (
+    <Draggable>
+      <div className={styles.twitchContainer}>
+        <App request={request}/>
+      </div>
+    </Draggable>)
 }
 
 // Attemps to parse a the window's url.
@@ -403,12 +409,12 @@ const App = ({ request }) => {
     // (e.g. URL params are invalid, just wait and then set it to retry failed)
 
     // TODO: need to pass in a loading state or something
-    // if (!requestState) {
-    //   setTimeout(() => {
-    //     setIsRetrying(false)
-    //   }, 1500)
-    //   return
-    // }
+    if (!requestState) {
+      setTimeout(() => {
+        setIsRetrying(false)
+      }, 1500)
+      return
+    }
 
     await requestMetadata(request)
     setIsRetrying(false)
@@ -509,14 +515,12 @@ const App = ({ request }) => {
            { [styles.compactApp]: isCompact },
            { [styles.twitter]: request && request.isTwitter && !mobileWebTwitter}
           )}>
-      <ToastContextProvider>
         <PauseContextProvider>
           <CardContextProvider>
             {renderPausePopover()}
             {renderPlayerContainer()}
           </CardContextProvider>
         </PauseContextProvider>
-      </ToastContextProvider>
     </div>
   )
 }

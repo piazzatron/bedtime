@@ -36,7 +36,7 @@ const TrackPlayerCompact = ({
         <Artwork
           artworkURL={albumArtURL}
           onClickURL={trackURL}
-          displayHoverPlayButton={true}
+          displayHoverPlayButton={false}
           onTogglePlay={onTogglePlay}
           playingState={playingState}
           iconColor={backgroundColor}
@@ -57,11 +57,11 @@ const TrackPlayerCompact = ({
           </div>
         </div>
         <div className={styles.bottomSection}>
-          <PlayButton
+          {/* <PlayButton
             playingState={playingState}
             onTogglePlay={onTogglePlay}
             iconColor={backgroundColor}
-          />
+          /> */}
           <div className={styles.titleContainer}>
             <Titles
               title={title}
